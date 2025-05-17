@@ -1,41 +1,106 @@
-import { action, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import { exec } from "child_process";
+import { createReadStream, readFile, writeFile } from "fs";
+import { parse } from 'csv-parse';
+import { promisify } from "util";
 
 /**
  * An example action class that displays a count that increments by one each time the button is pressed.
  */
-@action({ UUID: "com.nico75.monitorcontroller.increment" })
-export class IncrementCounter extends SingletonAction<CounterSettings> {
-	/**
-	 * The {@link SingletonAction.onWillAppear} event is useful for setting the visual representation of an action when it becomes visible. This could be due to the Stream Deck first
-	 * starting up, or the user navigating between pages / folders etc.. There is also an inverse of this event in the form of {@link streamDeck.client.onWillDisappear}. In this example,
-	 * we're setting the title to the "count" that is incremented in {@link IncrementCounter.onKeyDown}.
-	 */
-	override onWillAppear(ev: WillAppearEvent<CounterSettings>): void | Promise<void> {
-		return ev.action.setTitle(`${ev.payload.settings.count ?? 0}`);
+@action({ UUID: "com.nico75.monitorcontroller.enable_monitor" })
+export class EnableMonitor extends SingletonAction<MonitorSettings> {
+
+	override async onWillAppear(ev: WillAppearEvent): Promise<void> {
+		// Use MultiMonitorTool to print monitor info to a csv
+		streamDeck.logger.info();
+		streamDeck.logger.info("--PRINTING MONITOR INFO TO CSV--");
+		const execAsync = promisify(exec);
+		await execAsync('MultiMonitorTool.exe /scomma monitors.csv', {});
+		
+		// Read the monitor csv data
+		streamDeck.logger.info();
+		streamDeck.logger.info("--PARSING MONITOR INFO--");
+		var monitors = [];
+		const parser = createReadStream('monitors.csv').pipe(parse({delimiter: ','}));
+		for await (const row of parser) {
+			streamDeck.logger.debug("Row: ", row);
+			monitors.push({
+				shortMonitorID: row[15],
+				name: row[10],
+				resolution: row[0],
+				isPrimary: row[5] === "Yes"
+			} as Monitor);
+		}
+		monitors.splice(0, 1);
+		monitors.forEach(monitor => {
+			streamDeck.logger.info(monitor);
+		});
+
+		// Check for previously selected monitor
+		const readAsync = promisify(readFile);
+		var selectedMonitor;
+		try {
+			await readAsync(`${ev.action.id}.json`, 'utf8').then((data) => {
+				streamDeck.logger.debug("Config from file: ", data);
+				selectedMonitor = JSON.parse(data).selectedMonitor;
+			});
+		} catch (e) {
+			streamDeck.logger.warn("No existing config file");
+		}
+
+		// Set monitor dropdown options?
+		ev.action.setSettings({
+			monitorList: monitors,
+			selectedMonitor: selectedMonitor
+		});
 	}
 
-	/**
-	 * Listens for the {@link SingletonAction.onKeyDown} event which is emitted by Stream Deck when an action is pressed. Stream Deck provides various events for tracking interaction
-	 * with devices including key down/up, dial rotations, and device connectivity, etc. When triggered, {@link ev} object contains information about the event including any payloads
-	 * and action information where applicable. In this example, our action will display a counter that increments by one each press. We track the current count on the action's persisted
-	 * settings using `setSettings` and `getSettings`.
-	 */
-	override async onKeyDown(ev: KeyDownEvent<CounterSettings>): Promise<void> {
-		// Update the count from the settings.
-		const { settings } = ev.payload;
-		settings.incrementBy ??= 1;
-		settings.count = (settings.count ?? 0) + settings.incrementBy;
+	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<MonitorSettings>): Promise<void> | void {
+		// Persist selection & action id to config file
+		writeFile(`${ev.action.id}.json`, `{ "selectedMonitor": "${ev.payload.settings.selectedMonitor}" }`, (err) => {
+			if (err) {
+				streamDeck.logger.error(err);
+				return;
+			}
+			streamDeck.logger.info('Data successfully written');
+		});
+	}
 
-		// Update the current count in the action's settings, and change the title.
-		await ev.action.setSettings(settings);
-		await ev.action.setTitle(`${settings.count}`);
+	override async onKeyDown(ev: KeyDownEvent<MonitorSettings>): Promise<void> {
+		streamDeck.logger.info();
+		streamDeck.logger.info("INITIATION ACTION");
+		
+		streamDeck.logger.info("selected monitor: ", (await ev.action.getSettings()).selectedMonitor);
+		const state = ev.payload.settings;
+		var selectedMonitorID;
+		state.monitorList.forEach(monitor => {
+			if (monitor.name.includes(state.selectedMonitor)) {
+				selectedMonitorID = monitor.shortMonitorID;
+			}
+		});
+		streamDeck.logger.info("Selected monitor short ID: ", selectedMonitorID);
+
+
+		exec('MultiMonitorTool.exe /EnableAtPosition "MONITOR\\SAM711A\\{4d36e96e-e325-11ce-bfc1-08002be10318}\\0003" 5120 0',
+			{},
+			function(err, data) {
+			streamDeck.logger.error(err)
+			streamDeck.logger.info(data.toString());
+		});
 	}
 }
 
 /**
- * Settings for {@link IncrementCounter}.
+ * Settings for {@link EnableMonitor}.
  */
-type CounterSettings = {
-	count?: number;
-	incrementBy?: number;
+type MonitorSettings = {
+	selectedMonitor: string,
+	monitorList: Monitor[],
+};
+
+type Monitor = {
+	shortMonitorID: number,
+	name: string,
+	resolution: string,
+	isPrimary: boolean
 };
