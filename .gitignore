@@ -5,4 +5,3 @@ node_modules/
 */*.sdPlugin/bin
 */*.sdPlugin/logs
 */*.sdPlugin/config
-*/*.sdPlugin/utils/monitors.csv
