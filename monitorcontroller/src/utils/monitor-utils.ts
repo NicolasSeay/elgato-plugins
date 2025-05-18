@@ -1,4 +1,4 @@
-import streamDeck, { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillAppearEvent } from "@elgato/streamdeck";
+import streamDeck, { DidReceiveSettingsEvent, KeyDownEvent, WillAppearEvent } from "@elgato/streamdeck";
 import { exec } from "child_process";
 import { createReadStream, readFile, writeFile } from "fs";
 import { parse } from 'csv-parse';
