@@ -7,7 +7,7 @@ Hopefully this saves you time and headaches!
 
 # Usage
 
-## Stream Deck
+## In Stream Deck
 
 Steps if you have already installed this from the Elgato marketplace and are setting it up in the Stream Deck app.
 
@@ -27,7 +27,7 @@ Steps if you have already installed this from the Elgato marketplace and are set
 
 **Note**: I add a delay between the actions because it can take a few seconds for Windows to finish enabling/disabling the display
 
-## Local
+## Locally
 
 Steps for running/testing locally.
 
