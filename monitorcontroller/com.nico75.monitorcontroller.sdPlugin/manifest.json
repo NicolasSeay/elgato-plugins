@@ -4,11 +4,43 @@
 	"Author": "Nico75",
 	"Actions": [
 		{
-			"Name": "Counter",
-			"UUID": "com.nico75.monitorcontroller.increment",
+			"Name": "Enable Monitor",
+			"UUID": "com.nico75.monitorcontroller.enable_monitor",
 			"Icon": "imgs/actions/counter/icon",
-			"Tooltip": "Displays a count, which increments by one on press.",
-			"PropertyInspectorPath": "ui/increment-counter.html",
+			"Tooltip": "Enables the specified monitor.",
+			"PropertyInspectorPath": "ui/enable-monitor.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/counter/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Disable Monitor",
+			"UUID": "com.nico75.monitorcontroller.disable_monitor",
+			"Icon": "imgs/actions/counter/icon",
+			"Tooltip": "Disables the specified monitor.",
+			"PropertyInspectorPath": "ui/disable-monitor.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/counter/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Set Primary Monitor",
+			"UUID": "com.nico75.monitorcontroller.set_primary_monitor",
+			"Icon": "imgs/actions/counter/icon",
+			"Tooltip": "Sets the specified monitor as the primary.",
+			"PropertyInspectorPath": "ui/set-primary-monitor.html",
 			"Controllers": [
 				"Keypad"
 			],
